@@ -13,6 +13,10 @@ import Dashboard from './pages/Dashboard';
 import Employees from './pages/Employees';
 import AddEmployee from './pages/AddEmployee';
 import ImportEmployees from './pages/ImportEmployees';
+import Departments from './pages/Departments';
+import Units from './pages/Units';
+import Attendance from './pages/Attendance';
+import Reports from './pages/Reports';
 
 const queryClient = new QueryClient();
 
@@ -58,10 +62,10 @@ const AuthenticatedApp: React.FC = () => {
         <Route path="employees" element={<Employees />} />
         <Route path="employees/add" element={<AddEmployee />} />
         <Route path="employees/import" element={<ImportEmployees />} />
-        <Route path="departments" element={<div>Departments - Coming Soon</div>} />
-        <Route path="units" element={<div>Units - Coming Soon</div>} />
-        <Route path="attendance" element={<div>Attendance - Coming Soon</div>} />
-        <Route path="reports" element={<div>Reports - Coming Soon</div>} />
+        <Route path="departments" element={<Departments />} />
+        <Route path="units" element={<Units />} />
+        <Route path="attendance" element={<Attendance />} />
+        <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<div>Settings - Coming Soon</div>} />
         <Route path="my-attendance" element={<div>My Attendance - Coming Soon</div>} />
         <Route path="schedule" element={<div>Schedule - Coming Soon</div>} />
