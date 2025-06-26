@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
@@ -17,6 +16,7 @@ import Departments from './pages/Departments';
 import Units from './pages/Units';
 import Attendance from './pages/Attendance';
 import Reports from './pages/Reports';
+import Settings from './pages/Settings';
 
 const queryClient = new QueryClient();
 
@@ -66,7 +66,7 @@ const AuthenticatedApp: React.FC = () => {
         <Route path="units" element={<Units />} />
         <Route path="attendance" element={<Attendance />} />
         <Route path="reports" element={<Reports />} />
-        <Route path="settings" element={<div>Settings - Coming Soon</div>} />
+        <Route path="settings" element={<Settings />} />
         <Route path="my-attendance" element={<div>My Attendance - Coming Soon</div>} />
         <Route path="schedule" element={<div>Schedule - Coming Soon</div>} />
         <Route path="profile" element={<div>Profile - Coming Soon</div>} />
