@@ -32,8 +32,51 @@ const getAllEmployees = async (req, res, next) => {
       fingerprintId: emp.fingerprint_id,
       profilePicture: emp.profile_picture,
       isActive: emp.is_active,
-      role: emp.user_id ? (await User.findById(emp.user_id)).role : null
+      role: emp.user_id ? null : null // Temporarily set to null, will populate below
     })));
+
+    // Fix: Fetch user roles in parallel for employees with user_id
+    const employeesWithUserId = employees.filter(emp => emp.user_id);
+    const userIds = employeesWithUserId.map(emp => emp.user_id);
+    const users = await User.find({ _id: { $in: userIds } });
+    const userIdToRole = {};
+    users.forEach(user => {
+      userIdToRole[user._id] = user.role;
+    });
+
+    // Rebuild the response with roles
+    const response = employees.map(emp => ({
+      id: emp.id,
+      empNo: emp.emp_no,
+      firstName: emp.first_name,
+      lastName: emp.last_name,
+      fullName: `${emp.first_name} ${emp.last_name}`,
+      email: emp.email,
+      mobile: emp.mobile,
+      telephone: emp.telephone,
+      gender: emp.gender,
+      dob: emp.dob,
+      department: emp.department_name,
+      departmentId: emp.department_id,
+      unit: emp.unit_name,
+      unitId: emp.unit_id,
+      position: emp.position,
+      highestQualification: emp.highest_qualification,
+      address: emp.address,
+      country: emp.country,
+      startDate: emp.start_date,
+      maritalStatus: emp.marital_status,
+      childrenNo: emp.children_no,
+      bankName: emp.bank_name,
+      accountNo: emp.account_no,
+      bio: emp.bio,
+      fingerprintId: emp.fingerprint_id,
+      profilePicture: emp.profile_picture,
+      isActive: emp.is_active,
+      role: emp.user_id ? userIdToRole[emp.user_id] || null : null
+    }));
+
+    res.json(response);
   } catch (error) {
     next(error);
   }

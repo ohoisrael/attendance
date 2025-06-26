@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +14,7 @@ import {
 import { mockDepartments, mockPositions, mockQualifications } from '@/data/mockData';
 import { User, Building2, FileText, Fingerprint } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import axios from 'axios';
 
 const AddEmployee: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -48,14 +48,55 @@ const AddEmployee: React.FC = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically make an API call to save the employee
-    console.log('Employee data:', formData);
-    toast({
-      title: "Employee Added Successfully",
-      description: `${formData.firstName} ${formData.lastName} has been added to the system.`,
-    });
+
+    // Find department and unit IDs
+    const departmentObj = mockDepartments.find(d => d.name === formData.department);
+    const unitObj = departmentObj?.units.find(u => u.name === formData.unit);
+
+    // Prepare payload for backend
+    const payload = {
+      empNo: formData.empNo,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      mobile: formData.mobile,
+      telephone: formData.telephone,
+      gender: formData.gender,
+      dob: formData.dob,
+      departmentId: departmentObj?.id,
+      unitId: unitObj?.id,
+      position: formData.position,
+      highestQualification: formData.highestQualification,
+      address: formData.address,
+      country: formData.country,
+      startDate: formData.startDate,
+      maritalStatus: formData.maritalStatus,
+      childrenNo: formData.childrenNo,
+      bankName: formData.bankName,
+      accountNo: formData.accountNo,
+      bio: formData.bio,
+      fingerprintId: formData.fingerprint,
+      // Add other fields as needed
+    };
+
+    try {
+      // If your backend is running on localhost:3000, update the URL as needed
+      await axios.post('http://localhost:3000/api/employees', payload, {
+        // headers: { Authorization: `Bearer ${token}` } // if needed
+      });
+      toast({
+        title: "Employee Added Successfully",
+        description: `${formData.firstName} ${formData.lastName} has been added to the system.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add employee. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
