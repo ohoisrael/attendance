@@ -15,6 +15,7 @@ import { mockDepartments, mockPositions, mockQualifications } from '@/data/mockD
 import { User, Building2, FileText, Fingerprint } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import axios from 'axios';
+import { useAuth } from '@/context/AuthContext';
 
 const AddEmployee: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -43,6 +44,8 @@ const AddEmployee: React.FC = () => {
 
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const availableUnits = mockDepartments.find(d => d.name === selectedDepartment)?.units || [];
+
+  const { token } = useAuth();
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -82,9 +85,8 @@ const AddEmployee: React.FC = () => {
     };
 
     try {
-      // If your backend is running on localhost:3000, update the URL as needed
       await axios.post('http://localhost:3000/api/employees', payload, {
-        // headers: { Authorization: `Bearer ${token}` } // if needed
+        headers: { Authorization: `Bearer ${token}` }
       });
       toast({
         title: "Employee Added Successfully",

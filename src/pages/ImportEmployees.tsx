@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { FileSpreadsheet, Upload, Download, CheckCircle, AlertCircle } from 'luc
 import { useDropzone } from 'react-dropzone';
 import * as XLSX from 'xlsx';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
 interface ImportedEmployee {
   empNo: string;
@@ -25,6 +25,7 @@ const ImportEmployees: React.FC = () => {
   const [importedData, setImportedData] = useState<ImportedEmployee[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const { token } = useAuth();
 
   const validateEmployee = (employee: any): ImportedEmployee => {
     const errors: string[] = [];
@@ -155,15 +156,16 @@ const ImportEmployees: React.FC = () => {
 
   const importEmployees = () => {
     const validEmployees = importedData.filter(emp => emp.status === 'valid');
-    
     // Here you would typically make API calls to save the employees
+    // Example:
+    // axios.post('http://localhost:3000/api/employees/bulk', validEmployees, {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // });
     console.log('Importing employees:', validEmployees);
-    
     toast({
       title: "Import Successful",
       description: `${validEmployees.length} employees have been imported successfully.`,
     });
-
     // Reset the import data
     setImportedData([]);
   };

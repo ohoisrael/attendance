@@ -1,10 +1,10 @@
-
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { mockUsers } from '@/data/mockData';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import axios from 'axios';
 import { User } from '@/types';
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
@@ -26,39 +26,49 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+
+  // Restore from localStorage on mount
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    // Mock authentication - in real app, this would be an API call
-    const mockCredentials = [
-      { username: 'admin', password: 'admin', userId: '1' },
-      { username: 'hr', password: 'hr123', userId: '2' },
-      { username: 'patricia.nurse', password: 'password', userId: '2' },
-    ];
-
-    const credential = mockCredentials.find(
-      cred => cred.username === username && cred.password === password
-    );
-
-    if (credential) {
-      const foundUser = mockUsers.find(u => u.id === credential.userId);
-      if (foundUser) {
-        setUser(foundUser);
-        return true;
-      }
+    try {
+      const res = await axios.post('http://localhost:3000/api/auth/login', { username, password });
+      const { token, user } = res.data;
+      setToken(token);
+      setUser(user);
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      return true;
+    } catch (error: any) {
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      return false;
     }
-    
-    return false;
   };
 
   const logout = () => {
     setUser(null);
+    setToken(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   };
 
   const value = {
     user,
+    token,
     login,
     logout,
-    isAuthenticated: !!user,
+    isAuthenticated: !!token,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

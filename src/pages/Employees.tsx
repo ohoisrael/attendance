@@ -21,10 +21,20 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
+import { User } from '@/types';
+import { useAuth } from '@/context/AuthContext';
+
+interface AuthContextType {
+  user: User | null;
+  token: string | null;
+  login: (username: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  isAuthenticated: boolean;
+}
 
 const Employees: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,12 +47,13 @@ const Employees: React.FC = () => {
   const [editForm, setEditForm] = useState<any | null>(null);
   const [editLoading, setEditLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const { token } = useAuth();
 
   useEffect(() => {
     const fetchEmployees = async () => {
       setLoading(true);
       try {
-        const res = await axios.get('http://localhost:3000/api/employees');
+        const res = await api.get('/employees');
         setEmployees(res.data);
       } catch (error) {
         toast({
@@ -54,8 +65,8 @@ const Employees: React.FC = () => {
         setLoading(false);
       }
     };
-    fetchEmployees();
-  }, []);
+    if (token) fetchEmployees();
+  }, [token]);
 
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = (employee.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -85,12 +96,12 @@ const Employees: React.FC = () => {
     e.preventDefault();
     setEditLoading(true);
     try {
-      await axios.put(`http://localhost:3000/api/employees/${editEmployee.id}`, editForm);
+      await api.put(`/employees/${editEmployee.id}`, editForm);
       toast({ title: 'Employee updated', description: 'Employee details updated successfully.' });
       setEditEmployee(null);
       setEditForm(null);
       // Refresh list
-      const res = await axios.get('http://localhost:3000/api/employees');
+      const res = await api.get('/employees');
       setEmployees(res.data);
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to update employee.', variant: 'destructive' });
@@ -103,11 +114,11 @@ const Employees: React.FC = () => {
     if (!deleteEmployee) return;
     setDeleteLoading(true);
     try {
-      await axios.delete(`http://localhost:3000/api/employees/${deleteEmployee.id}`);
+      await api.delete(`/employees/${deleteEmployee.id}`);
       toast({ title: 'Employee deleted', description: 'Employee has been removed.' });
       setDeleteEmployee(null);
       // Refresh list
-      const res = await axios.get('http://localhost:3000/api/employees');
+      const res = await api.get('/employees');
       setEmployees(res.data);
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to delete employee.', variant: 'destructive' });
