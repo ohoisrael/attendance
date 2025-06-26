@@ -1,9 +1,11 @@
 const jwt = require('jsonwebtoken');
 const Employee = require('../models/Employee');
 const User = require('../models/User');
+const { log } = require('console');
 
 const login = async (req, res, next) => {
   try {
+    
     const { username, password } = req.body;
     
     const user = await User.findByUsername(username);

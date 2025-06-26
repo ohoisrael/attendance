@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -15,21 +15,78 @@ interface ImportedEmployee {
   lastName: string;
   email: string;
   mobile: string;
-  department: string;
+  telephone?: string;
+  gender?: string;
+  dob?: string;
+  departmentId: number;
+  unitId?: number;
   position: string;
+  highestQualification?: string;
+  address?: string;
+  country?: string;
+  startDate?: string;
+  maritalStatus?: string;
+  childrenNo?: number;
+  bankName?: string;
+  accountNo?: string;
+  bio?: string;
+  fingerprintId?: string;
+  profilePicture?: string;
+  role?: string;
   status: 'valid' | 'error';
   errors?: string[];
+}
+
+interface Department {
+  id: number;
+  name: string;
+}
+
+interface Unit {
+  id: number;
+  name: string;
+  departmentId: number;
 }
 
 const ImportEmployees: React.FC = () => {
   const [importedData, setImportedData] = useState<ImportedEmployee[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const { token } = useAuth();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch departments
+        const deptResponse = await fetch('http://localhost:3000/api/departments', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const deptData = await deptResponse.json();
+        setDepartments(deptData);
+
+        // Fetch units
+        const unitResponse = await fetch('http://localhost:3000/api/units', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const unitData = await unitResponse.json();
+        setUnits(unitData);
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch required data.',
+          variant: 'destructive',
+        });
+      }
+    };
+    fetchData();
+  }, [token]);
 
   const validateEmployee = (employee: any): ImportedEmployee => {
     const errors: string[] = [];
     
+    // Required fields validation
     if (!employee.empNo) errors.push('Employee number is required');
     if (!employee.firstName) errors.push('First name is required');
     if (!employee.lastName) errors.push('Last name is required');
@@ -38,15 +95,62 @@ const ImportEmployees: React.FC = () => {
     if (!employee.department) errors.push('Department is required');
     if (!employee.position) errors.push('Position is required');
     
-    // Email validation
+    // Email format validation
     if (employee.email && !/\S+@\S+\.\S+/.test(employee.email)) {
       errors.push('Invalid email format');
     }
 
+    // Department validation
+    const department = departments.find(d => d.name === employee.department);
+    if (employee.department && !department) {
+      errors.push(`Department "${employee.department}" not found`);
+    }
+
+    // Unit validation if provided
+    let unitId: number | undefined;
+    if (employee.unit) {
+      const unit = units.find(u => u.name === employee.unit && u.departmentId === department?.id);
+      if (!unit) {
+        errors.push(`Unit "${employee.unit}" not found in department "${employee.department}"`);
+      } else {
+        unitId = unit.id;
+      }
+    }
+
+    // Date validation
+    if (employee.dob && isNaN(new Date(employee.dob).getTime())) {
+      errors.push('Invalid date of birth format');
+    }
+    if (employee.startDate && isNaN(new Date(employee.startDate).getTime())) {
+      errors.push('Invalid start date format');
+    }
+
     return {
-      ...employee,
+      empNo: employee.empNo,
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      email: employee.email,
+      mobile: employee.mobile,
+      telephone: employee.telephone,
+      gender: employee.gender,
+      dob: employee.dob,
+      departmentId: department?.id || 0,
+      unitId,
+      position: employee.position,
+      highestQualification: employee.highestQualification,
+      address: employee.address,
+      country: employee.country,
+      startDate: employee.startDate,
+      maritalStatus: employee.maritalStatus,
+      childrenNo: employee.childrenNo ? Number(employee.childrenNo) : undefined,
+      bankName: employee.bankName,
+      accountNo: employee.accountNo,
+      bio: employee.bio,
+      fingerprintId: employee.fingerprint,
+      profilePicture: employee.profilePicture,
+      role: employee.role,
       status: errors.length === 0 ? 'valid' : 'error',
-      errors: errors.length > 0 ? errors : undefined
+      errors: errors.length > 0 ? errors : undefined,
     };
   };
 
@@ -77,32 +181,43 @@ const ImportEmployees: React.FC = () => {
               lastName: row['Last Name'] || row['lastName'] || '',
               email: row['Email'] || row['email'] || '',
               mobile: row['Mobile'] || row['mobile'] || '',
+              telephone: row['Telephone'] || row['telephone'] || '',
               department: row['Department'] || row['department'] || '',
+              unit: row['Unit'] || row['unit'] || '',
               position: row['Position'] || row['position'] || '',
               gender: row['Gender'] || row['gender'] || '',
               dob: row['Date of Birth'] || row['dob'] || '',
+              highestQualification: row['Highest Qualification'] || row['highestQualification'] || '',
               address: row['Address'] || row['address'] || '',
+              country: row['Country'] || row['country'] || '',
+              startDate: row['Start Date'] || row['startDate'] || '',
+              maritalStatus: row['Marital Status'] || row['maritalStatus'] || '',
+              childrenNo: row['Children'] || row['childrenNo'] || '',
+              bankName: row['Bank Name'] || row['bankName'] || '',
+              accountNo: row['Account Number'] || row['accountNo'] || '',
+              bio: row['Bio'] || row['bio'] || '',
               fingerprint: row['Fingerprint'] || row['fingerprint'] || '',
+              profilePicture: row['Profile Picture'] || row['profilePicture'] || '',
+              role: row['Role'] || row['role'] || '',
             }));
             
-            setImportedData(processedData as ImportedEmployee[]);
+            setImportedData(processedData);
             setIsProcessing(false);
             setUploadProgress(0);
             
             toast({
-              title: "File Processed",
+              title: 'File Processed',
               description: `${processedData.length} employee records found in the file.`,
             });
           }
         }, 200);
-        
       } catch (error) {
         setIsProcessing(false);
         setUploadProgress(0);
         toast({
-          title: "Error Processing File",
-          description: "Please ensure the file is a valid Excel format (.xlsx, .xls).",
-          variant: "destructive",
+          title: 'Error Processing File',
+          description: 'Please ensure the file is a valid Excel format (.xlsx, .xls).',
+          variant: 'destructive',
         });
       }
     };
@@ -115,15 +230,15 @@ const ImportEmployees: React.FC = () => {
     if (file) {
       processExcelFile(file);
     }
-  }, []);
+  }, [departments, units]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-      'application/vnd.ms-excel': ['.xls']
+      'application/vnd.ms-excel': ['.xls'],
     },
-    maxFiles: 1
+    maxFiles: 1,
   });
 
   const downloadTemplate = () => {
@@ -134,12 +249,24 @@ const ImportEmployees: React.FC = () => {
         'Last Name': 'Doe',
         'Email': 'john.doe@hospital.com',
         'Mobile': '+233 24 123 4567',
+        'Telephone': '+233 30 123 4567',
         'Department': 'Emergency Department',
+        'Unit': 'Emergency Room',
         'Position': 'Senior Nurse',
         'Gender': 'Male',
         'Date of Birth': '1990-01-15',
-        'Address': 'Accra, Ghana',
-        'Fingerprint': 'FP001234567890'
+        'Highest Qualification': 'Bachelor of Nursing',
+        'Address': '123 Main Street, Accra',
+        'Country': 'Ghana',
+        'Start Date': '2020-01-01',
+        'Marital Status': 'Single',
+        'Children': 0,
+        'Bank Name': 'Ghana Commercial Bank',
+        'Account Number': '1234567890',
+        'Bio': 'Experienced nurse with 5 years in emergency care',
+        'Fingerprint': 'FP001234567890',
+        'Profile Picture': 'profile.jpg',
+        'Role': 'employee'
       }
     ];
 
@@ -149,29 +276,85 @@ const ImportEmployees: React.FC = () => {
     XLSX.writeFile(workbook, 'employee_import_template.xlsx');
     
     toast({
-      title: "Template Downloaded",
-      description: "Use this template to format your employee data.",
+      title: 'Template Downloaded',
+      description: 'Use this template to format your employee data.',
     });
   };
 
-  const importEmployees = () => {
-    const validEmployees = importedData.filter(emp => emp.status === 'valid');
-    // Here you would typically make API calls to save the employees
-    // Example:
-    // axios.post('http://localhost:3000/api/employees/bulk', validEmployees, {
-    //   headers: { Authorization: `Bearer ${token}` }
-    // });
-    console.log('Importing employees:', validEmployees);
-    toast({
-      title: "Import Successful",
-      description: `${validEmployees.length} employees have been imported successfully.`,
-    });
-    // Reset the import data
-    setImportedData([]);
+  const importEmployees = async () => {
+    const validEmployees = importedData
+      .filter(emp => emp.status === 'valid' && emp.departmentId)
+      .map(emp => ({
+        empNo: emp.empNo,
+        firstName: emp.firstName,
+        lastName: emp.lastName,
+        email: emp.email,
+        mobile: emp.mobile,
+        telephone: emp.telephone,
+        gender: emp.gender,
+        dob: emp.dob,
+        departmentId: emp.departmentId,
+        unitId: emp.unitId,
+        position: emp.position,
+        highestQualification: emp.highestQualification,
+        address: emp.address,
+        country: emp.country,
+        startDate: emp.startDate,
+        maritalStatus: emp.maritalStatus,
+        childrenNo: emp.childrenNo,
+        bankName: emp.bankName,
+        accountNo: emp.accountNo,
+        bio: emp.bio,
+        fingerprintId: emp.fingerprintId,
+        profilePicture: emp.profilePicture,
+        role: emp.role
+      }));
+
+    if (validEmployees.length === 0) {
+      toast({
+        title: 'No Valid Employees',
+        description: 'No valid employee records to import.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const response = await fetch('http://localhost:3000/api/employees/bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(validEmployees),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to import employees');
+      }
+
+      toast({
+        title: 'Import Successful',
+        description: `${data.importedCount || validEmployees.length} employees imported successfully. ${data.failedCount || 0} failed.`,
+      });
+
+      setImportedData([]);
+    } catch (error: any) {
+      toast({
+        title: 'Import Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const validCount = importedData.filter(emp => emp.status === 'valid').length;
-  const errorCount = importedData.filter(emp => emp.status === 'error').length;
+  const validCount = importedData.filter(emp => emp.status === 'valid' && emp.departmentId).length;
+  const errorCount = importedData.filter(emp => emp.status === 'error' || !emp.departmentId).length;
 
   return (
     <div className="space-y-6">
@@ -180,7 +363,7 @@ const ImportEmployees: React.FC = () => {
         <p className="text-gray-500">Bulk import employee data from Excel files</p>
       </div>
 
-      {/* Instructions */}
+      {/* Instructions Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
@@ -223,7 +406,7 @@ const ImportEmployees: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* File Upload */}
+      {/* File Upload Card */}
       <Card>
         <CardHeader>
           <CardTitle>Upload Excel File</CardTitle>
@@ -266,7 +449,7 @@ const ImportEmployees: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Import Preview */}
+      {/* Import Preview Card */}
       {importedData.length > 0 && (
         <Card>
           <CardHeader>
@@ -291,14 +474,14 @@ const ImportEmployees: React.FC = () => {
                   <div 
                     key={index}
                     className={`p-3 border rounded-lg ${
-                      employee.status === 'valid' 
+                      employee.status === 'valid' && employee.departmentId
                         ? 'border-green-200 bg-green-50' 
                         : 'border-red-200 bg-red-50'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        {employee.status === 'valid' ? (
+                        {employee.status === 'valid' && employee.departmentId ? (
                           <CheckCircle className="h-5 w-5 text-green-600" />
                         ) : (
                           <AlertCircle className="h-5 w-5 text-red-600" />
@@ -308,7 +491,7 @@ const ImportEmployees: React.FC = () => {
                             {employee.firstName} {employee.lastName} ({employee.empNo})
                           </p>
                           <p className="text-sm text-gray-600">
-                            {employee.email} - {employee.department}
+                            {employee.email} - {employee.position}
                           </p>
                         </div>
                       </div>
@@ -330,8 +513,8 @@ const ImportEmployees: React.FC = () => {
 
             {validCount > 0 && (
               <div className="mt-6 flex justify-end">
-                <Button onClick={importEmployees}>
-                  Import {validCount} Employees
+                <Button onClick={importEmployees} disabled={isProcessing}>
+                  {isProcessing ? 'Importing...' : `Import ${validCount} Employees`}
                 </Button>
               </div>
             )}

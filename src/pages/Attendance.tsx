@@ -1,5 +1,5 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,46 +9,90 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Clock, Calendar as CalendarIcon, Filter, Download, Search, Users } from 'lucide-react';
-import { mockAttendanceRecords, mockUsers } from '@/data/mockData';
-import { AttendanceRecord } from '@/types';
+import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { AttendanceRecord } from '@/types';
 
 const Attendance: React.FC = () => {
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(mockAttendanceRecords);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [departments, setDepartments] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Generate more mock attendance records for today
-  const generateTodayRecords = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const newRecords: AttendanceRecord[] = mockUsers.map((user, index) => ({
-      id: `today_${user.id}`,
-      employeeName: user.fullName,
-      employeeId: user.id,
-      department: user.department,
-      unit: user.unit,
-      date: today,
-      clockIn: index === 0 ? '08:00' : '08:30',
-      clockOut: index === 0 ? '17:00' : undefined,
-      hoursWorked: index === 0 ? 9 : undefined,
-      status: index === 0 ? 'present' : 'late' as any,
-      notes: index === 0 ? 'Regular working day' : 'Traffic delay'
-    }));
-    return newRecords;
+  useEffect(() => {
+    fetchDepartments();
+    fetchAttendanceRecords();
+  }, [selectedDate]);
+
+  const fetchDepartments = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:3000/api/departments', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setDepartments(response.data.map((dept: any) => dept.name));
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to fetch departments');
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch departments from backend.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const todayRecords = generateTodayRecords();
-  const allRecords = [...attendanceRecords, ...todayRecords];
+  const fetchAttendanceRecords = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      const date = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+      const response = await axios.get('http://localhost:3000/api/attendance', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          startDate: date,
+          endDate: date
+        }
+      });
+      setAttendanceRecords(response.data.map((record: any) => ({
+        id: record.id,
+        employeeName: `${record.first_name} ${record.last_name}`,
+        employeeId: record.employee_id,
+        department: record.department_name,
+        unit: record.unit_name || '-',
+        date: record.date,
+        clockIn: record.clock_in || '-',
+        clockOut: record.clock_out || '-',
+        hoursWorked: record.hours_worked,
+        status: record.status,
+        notes: record.notes || '-'
+      })));
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to fetch attendance records');
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch attendance records from backend.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const filteredRecords = allRecords.filter(record => {
+  const filteredRecords = attendanceRecords.filter(record => {
     const matchesSearch = record.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          record.department.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
     const matchesDepartment = departmentFilter === 'all' || record.department === departmentFilter;
-    
     return matchesSearch && matchesStatus && matchesDepartment;
   });
 
@@ -61,8 +105,6 @@ const Attendance: React.FC = () => {
     };
     return variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800';
   };
-
-  const departments = ['Emergency Department', 'Surgery Department', 'Administration'];
 
   // Calculate stats
   const totalPresent = filteredRecords.filter(r => r.status === 'present').length;
@@ -141,12 +183,17 @@ const Attendance: React.FC = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
+                disabled={isLoading}
               />
             </div>
             
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}>
+                <Button
+                  variant="outline"
+                  className={cn("justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
+                  disabled={isLoading}
+                >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
                 </Button>
@@ -156,7 +203,7 @@ const Attendance: React.FC = () => {
               </PopoverContent>
             </Popover>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={setStatusFilter} disabled={isLoading}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
@@ -169,7 +216,7 @@ const Attendance: React.FC = () => {
               </SelectContent>
             </Select>
 
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter} disabled={isLoading}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by department" />
               </SelectTrigger>
@@ -181,7 +228,7 @@ const Attendance: React.FC = () => {
               </SelectContent>
             </Select>
 
-            <Button>
+            <Button disabled={isLoading}>
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
@@ -198,6 +245,14 @@ const Attendance: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {isLoading && !attendanceRecords.length && (
+            <div className="text-center py-10">Loading attendance records...</div>
+          )}
+          {error && !attendanceRecords.length && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded">
+              {error}
+            </div>
+          )}
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -218,17 +273,17 @@ const Attendance: React.FC = () => {
                   <TableRow key={record.id}>
                     <TableCell className="font-medium">{record.employeeName}</TableCell>
                     <TableCell>{record.department}</TableCell>
-                    <TableCell>{record.unit || '-'}</TableCell>
+                    <TableCell>{record.unit}</TableCell>
                     <TableCell>{record.date}</TableCell>
-                    <TableCell>{record.clockIn || '-'}</TableCell>
-                    <TableCell>{record.clockOut || '-'}</TableCell>
+                    <TableCell>{record.clockIn}</TableCell>
+                    <TableCell>{record.clockOut}</TableCell>
                     <TableCell>{record.hoursWorked ? `${record.hoursWorked}h` : '-'}</TableCell>
                     <TableCell>
                       <Badge className={getStatusBadge(record.status)}>
                         {record.status.replace('_', ' ')}
                       </Badge>
                     </TableCell>
-                    <TableCell className="max-w-xs truncate">{record.notes || '-'}</TableCell>
+                    <TableCell className="max-w-xs truncate">{record.notes}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

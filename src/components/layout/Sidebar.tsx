@@ -76,7 +76,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole, isCollapsed }) => {
           <Shield className="h-8 w-8 text-blue-400" />
           {!isCollapsed && (
             <div>
-              <h1 className="text-xl font-bold">Hospital AMS</h1>
+              <h1 className="text-xs font-bold">PRESBYTERIAN HOSPITAL</h1>
               <p className="text-xs text-slate-400">Attendance Management</p>
             </div>
           )}

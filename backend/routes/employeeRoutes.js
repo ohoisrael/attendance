@@ -7,6 +7,7 @@ router.get('/', auth(), employeeController.getAllEmployees);
 router.get('/stats', auth(), employeeController.getEmployeeStats);
 router.get('/:id', auth(), employeeController.getEmployeeById);
 router.post('/', auth(['admin', 'hr']), employeeController.createEmployee);
+router.post('/bulk', auth(['admin', 'hr']), employeeController.bulkImportEmployees);
 router.put('/:id', auth(['admin', 'hr']), employeeController.updateEmployee);
 router.delete('/:id', auth(['admin']), employeeController.deleteEmployee);
 

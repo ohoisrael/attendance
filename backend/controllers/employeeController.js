@@ -201,11 +201,91 @@ const getEmployeeStats = async (req, res, next) => {
   }
 };
 
+const bulkImportEmployees = async (req, res, next) => {
+  try {
+    const employeesData = req.body;
+    
+    if (!Array.isArray(employeesData)) {
+      return res.status(400).json({ error: 'Expected an array of employee data' });
+    }
+
+    const results = [];
+    const errors = [];
+
+    for (const employeeData of employeesData) {
+      try {
+        // Create user account if role is provided
+        let userId = null;
+        if (employeeData.role) {
+          userId = await User.create({
+            username: employeeData.email.split('@')[0],
+            password: 'defaultPassword123', // Should be changed on first login
+            role: employeeData.role,
+            email: employeeData.email
+          });
+        }
+
+        const employeeId = await Employee.create({
+          empNo: employeeData.empNo,
+          userId,
+          firstName: employeeData.firstName,
+          lastName: employeeData.lastName,
+          email: employeeData.email,
+          mobile: employeeData.mobile,
+          telephone: employeeData.telephone,
+          gender: employeeData.gender,
+          dob: employeeData.dob,
+          departmentId: employeeData.departmentId,
+          unitId: employeeData.unitId,
+          position: employeeData.position,
+          highestQualification: employeeData.highestQualification,
+          address: employeeData.address,
+          country: employeeData.country,
+          startDate: employeeData.startDate,
+          maritalStatus: employeeData.maritalStatus,
+          childrenNo: employeeData.childrenNo || 0,
+          bankName: employeeData.bankName,
+          accountNo: employeeData.accountNo,
+          bio: employeeData.bio,
+          fingerprintId: employeeData.fingerprintId,
+          profilePicture: employeeData.profilePicture
+        });
+
+        results.push({
+          employeeId,
+          empNo: employeeData.empNo,
+          name: `${employeeData.firstName} ${employeeData.lastName}`,
+          status: 'success'
+        });
+      } catch (error) {
+        errors.push({
+          empNo: employeeData.empNo,
+          name: `${employeeData.firstName} ${employeeData.lastName}`,
+          error: error.message,
+          status: 'failed'
+        });
+      }
+    }
+
+    res.status(201).json({
+      message: 'Bulk import completed',
+      importedCount: results.length,
+      failedCount: errors.length,
+      results,
+      errors
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 module.exports = {
   getAllEmployees,
   getEmployeeById,
   createEmployee,
   updateEmployee,
   deleteEmployee,
-  getEmployeeStats
+  getEmployeeStats,
+  bulkImportEmployees,
 };
