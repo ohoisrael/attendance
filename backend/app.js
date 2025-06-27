@@ -9,10 +9,13 @@ const attendanceRoutes = require('./routes/attendanceRoutes');
 const departmentRoutes = require('./routes/departmentRoutes');
 const unitRoutes = require('./routes/unitRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const zktecoRoutes = require('./routes/zktecoRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const attendanceSync = require('./services/attendanceSyncService');
+const realtimeAttendanceService = require('./services/realtimeAttendanceService');
 
 // const attendanceSync = new attendanceSyncService();
+realtimeAttendanceService.start();
 
 const app = express();
 
@@ -37,6 +40,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/units', unitRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/zkteco', zktecoRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
