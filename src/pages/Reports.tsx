@@ -150,7 +150,7 @@ const Reports: React.FC = () => {
 
       if (reportType === 'attendance' || reportType === 'trends') {
         const response = await axios.get('http://localhost:3000/api/reports/attendance', config);
-        const employeeCountResponse = await axios.get('http://localhost:3000/api/employees/count', {
+        const employeeCountResponse = await axios.get('http://localhost:3000/api/employees/stats', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setStats({

@@ -1,15 +1,15 @@
-import bcrypt from 'bcrypt';
-import { body, validationResult } from 'express-validator';
-import pool from '../config/db.js';
+const bcrypt = require('bcryptjs');
+const { body, validationResult } = require('express-validator');
+const pool = require('../config/db');
 
-export const validateUser = [
+exports.validateUser = [
   body('username').notEmpty().trim(),
   body('password').isLength({ min: 6 }),
   body('email').isEmail(),
   body('role').isIn(['admin', 'hr', 'employee'])
 ];
 
-export const getUsers = async (req, res) => {
+exports.getUsers = async (req, res) => {
   try {
     const [users] = await pool.query('SELECT id, empNo, username, email, role, fullName, department, unit, position, activation FROM users');
     res.json(users);
@@ -19,7 +19,7 @@ export const getUsers = async (req, res) => {
   }
 };
 
-export const createUser = async (req, res) => {
+exports.createUser = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -56,5 +56,44 @@ export const createUser = async (req, res) => {
   } catch (error) {
     console.error('Create user error:', error);
     res.status(500).json({ error: 'Server error' });
+  }
+};
+
+exports.changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id; // From auth middleware
+
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    }
+
+    // Find user
+    const [users] = await pool.query('SELECT password FROM users WHERE id = ?', [userId]);
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, users[0].password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await pool.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId]);
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    next(error);
   }
 };
