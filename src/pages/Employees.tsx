@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, Filter, Plus, Eye, Edit, Trash2, Download } from 'lucide-react';
+import { Search, Filter, Plus, Eye, Edit, Trash2, Download, FileSpreadsheet, Printer } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -27,6 +27,12 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
 import { User } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface AuthContextType {
   user: User | null;
@@ -35,6 +41,137 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
 }
+
+const exportToCSV = (data: any[], filename: string) => {
+  if (data.length === 0) return;
+  
+  const headers = ['Name', 'Employee ID', 'Email', 'Department', 'Unit', 'Position', 'Role', 'Status', 'Mobile', 'Address'];
+  const csvContent = [
+    headers.join(','),
+    ...data.map(emp => [
+      emp.fullName || '',
+      emp.empNo || '',
+      emp.email || '',
+      emp.department || '',
+      emp.unit || '',
+      emp.position || '',
+      emp.role || '',
+      emp.isActive ? 'Active' : 'Inactive',
+      emp.mobile || '',
+      emp.address || ''
+    ].map(field => `"${field}"`).join(','))
+  ].join('\n');
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const exportToExcel = (data: any[], filename: string) => {
+  if (data.length === 0) return;
+  
+  // Create HTML table for Excel
+  const headers = ['Name', 'Employee ID', 'Email', 'Department', 'Unit', 'Position', 'Role', 'Status', 'Mobile', 'Address'];
+  const tableRows = data.map(emp => [
+    emp.fullName || '',
+    emp.empNo || '',
+    emp.email || '',
+    emp.department || '',
+    emp.unit || '',
+    emp.position || '',
+    emp.role || '',
+    emp.isActive ? 'Active' : 'Inactive',
+    emp.mobile || '',
+    emp.address || ''
+  ]);
+  
+  const htmlContent = `
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${filename}</title>
+      </head>
+      <body>
+        <table border="1">
+          <thead>
+            <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            ${tableRows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+          </tbody>
+        </table>
+      </body>
+    </html>
+  `;
+  
+  const blob = new Blob([htmlContent], { type: 'application/vnd.ms-excel' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const printEmployees = (data: any[]) => {
+  if (data.length === 0) return;
+  
+  const headers = ['Name', 'Employee ID', 'Email', 'Department', 'Unit', 'Position', 'Role', 'Status'];
+  const tableRows = data.map(emp => [
+    emp.fullName || '',
+    emp.empNo || '',
+    emp.email || '',
+    emp.department || '',
+    emp.unit || '',
+    emp.position || '',
+    emp.role || '',
+    emp.isActive ? 'Active' : 'Inactive'
+  ]);
+  
+  const printContent = `
+    <html>
+      <head>
+        <title>Employee Directory</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; font-weight: bold; }
+          h1 { color: #333; }
+          @media print { body { margin: 0; } }
+        </style>
+      </head>
+      <body>
+        <h1>Employee Directory</h1>
+        <p>Generated on: ${new Date().toLocaleDateString()}</p>
+        <p>Total Employees: ${data.length}</p>
+        <table>
+          <thead>
+            <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            ${tableRows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+          </tbody>
+        </table>
+      </body>
+    </html>
+  `;
+  
+  const printWindow = window.open('', '_blank');
+  if (printWindow) {
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+  }
+};
 
 const Employees: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -127,6 +264,37 @@ const Employees: React.FC = () => {
     }
   };
 
+  const handleExport = (type: 'csv' | 'excel' | 'print') => {
+    const dataToExport = filteredEmployees.length > 0 ? filteredEmployees : employees;
+    const timestamp = new Date().toISOString().split('T')[0];
+    
+    switch (type) {
+      case 'csv':
+        const csvFilename = `employees_${timestamp}.csv`;
+        exportToCSV(dataToExport, csvFilename);
+        toast({
+          title: 'CSV Export Successful',
+          description: `${dataToExport.length} employees exported to ${csvFilename}`,
+        });
+        break;
+      case 'excel':
+        const excelFilename = `employees_${timestamp}.xls`;
+        exportToExcel(dataToExport, excelFilename);
+        toast({
+          title: 'Excel Export Successful',
+          description: `${dataToExport.length} employees exported to ${excelFilename}`,
+        });
+        break;
+      case 'print':
+        printEmployees(dataToExport);
+        toast({
+          title: 'Print Ready',
+          description: `Print dialog opened for ${dataToExport.length} employees`,
+        });
+        break;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -135,10 +303,28 @@ const Employees: React.FC = () => {
           <p className="text-gray-500">Manage hospital staff and their information</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" disabled={employees.length === 0}>
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => handleExport('csv')}>
+                <Download className="mr-2 h-4 w-4" />
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('excel')}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Export as Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('print')}>
+                <Printer className="mr-2 h-4 w-4" />
+                Print
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Link to="/employees/add">
             <Button>
               <Plus className="mr-2 h-4 w-4" />

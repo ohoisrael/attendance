@@ -21,7 +21,9 @@
     "jsonwebtoken": "^9.0.0",
     "morgan": "^1.10.0",
     "mysql2": "^3.6.0",
-    "winston": "^3.8.2"
+    "nodemailer": "^7.0.3",
+    "winston": "^3.8.2",
+    "zklib": "^0.2.11"
   },
   "devDependencies": {
     "jest": "^29.5.0",

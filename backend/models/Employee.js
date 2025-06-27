@@ -14,7 +14,7 @@ class Employee {
         employeeData.dob, employeeData.departmentId, employeeData.unitId, employeeData.position,
         employeeData.highestQualification, employeeData.address, employeeData.country,
         employeeData.startDate, employeeData.maritalStatus, employeeData.childrenNo,
-        employeeData.bankName, employeeData.accountNo, employeeData.bio, 
+        employeeData.bankName, employeeData.accountNo, employeeData.bio,
         employeeData.fingerprintId, employeeData.profilePicture
       ]
     );
@@ -82,6 +82,12 @@ class Employee {
     const [rows] = await db.query('SELECT * FROM employees WHERE department_id = ?', [departmentId]);
     return rows;
   }
+
+  static async findByFingerprintId(fingerprintId) {
+    const [rows] = await db.query('SELECT * FROM employees WHERE fingerprint_id = ?', [fingerprintId]);
+    return rows[0];
+  }
+
 }
 
 module.exports = Employee;

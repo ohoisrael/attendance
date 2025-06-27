@@ -55,16 +55,16 @@ class Attendance {
       LEFT JOIN units u ON e.unit_id = u.id
       WHERE a.date BETWEEN ? AND ?
     `;
-    
+
     const params = [startDate, endDate];
-    
+
     if (departmentId) {
       query += ' AND e.department_id = ?';
       params.push(departmentId);
     }
-    
+
     query += ' ORDER BY a.date DESC, e.first_name ASC';
-    
+
     const [rows] = await db.query(query, params);
     return rows;
   }
@@ -80,9 +80,18 @@ class Attendance {
       FROM attendance
       WHERE date BETWEEN ? AND ?
     `, [startDate, endDate]);
-    
+
     return rows[0];
   }
+
+  static async findByEmployeeAndTime(employeeId, timestamp) {
+    const [rows] = await db.query(
+      'SELECT * FROM attendance WHERE employee_id = ? AND date = ?',
+      [employeeId, timestamp]
+    );
+    return rows[0];
+  }
+
 }
 
 module.exports = Attendance;

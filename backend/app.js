@@ -10,6 +10,8 @@ const departmentRoutes = require('./routes/departmentRoutes');
 const unitRoutes = require('./routes/unitRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const errorHandler = require('./middleware/errorHandler');
+const attendanceSyncService = require('./services/attendanceSyncService');
+const attendanceSync = new attendanceSyncService();
 
 const app = express();
 
@@ -42,5 +44,14 @@ app.get('/health', (req, res) => {
 
 // Error handler
 app.use(errorHandler);
+
+// Start attendance sync service
+attendanceSync.start();
+
+// shutdown attendance sync service
+process.on('SIGINT', () => {
+  attendanceSync.stop();
+  process.exit(0);
+});
 
 module.exports = app;
