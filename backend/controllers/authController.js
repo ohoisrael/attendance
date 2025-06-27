@@ -1,9 +1,11 @@
 const jwt = require('jsonwebtoken');
 const Employee = require('../models/Employee');
 const User = require('../models/User');
+const { log } = require('console');
 
 const login = async (req, res, next) => {
   try {
+    
     const { username, password } = req.body;
     
     const user = await User.findByUsername(username);
@@ -21,7 +23,7 @@ const login = async (req, res, next) => {
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '8h' }
+      { expiresIn: '1d' }
     );
     
     res.json({

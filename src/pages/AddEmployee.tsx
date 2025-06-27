@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,11 +11,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { mockDepartments, mockPositions, mockQualifications } from '@/data/mockData';
+import { mockPositions, mockQualifications } from '@/data/mockData';
 import { User, Building2, FileText, Fingerprint } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
+
+interface Department {
+  id: string;
+  name: string;
+}
+
+interface Unit {
+  id: string;
+  name: string;
+  department_id: string;
+}
 
 const AddEmployee: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -42,10 +53,60 @@ const AddEmployee: React.FC = () => {
     fingerprint: '',
   });
 
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState('');
-  const availableUnits = mockDepartments.find(d => d.name === selectedDepartment)?.units || [];
-
   const { token } = useAuth();
+
+  // Fetch departments on mount
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const response = await axios.get('http://localhost:3000/api/departments', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setDepartments(response.data);
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to load departments.',
+          variant: 'destructive',
+        });
+      }
+    };
+    fetchDepartments();
+  }, [token]);
+
+  // Fetch units when department changes
+  useEffect(() => {
+    const fetchUnits = async () => {
+      if (!selectedDepartment) {
+        setUnits([]);
+        return;
+      }
+      try {
+        const departmentObj = departments.find((d) => d.name === selectedDepartment);
+        if (departmentObj) {
+          const response = await axios.get('http://localhost:3000/api/units', {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { departmentId: departmentObj.id },
+          });
+          // Filter units to ensure they match the selected department_id
+          const filteredUnits = response.data.filter((unit: Unit) => unit.department_id === departmentObj.id);
+          setUnits(filteredUnits);
+        } else {
+          setUnits([]);
+        }
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to load units for the selected department.',
+          variant: 'destructive',
+        });
+      }
+    };
+    fetchUnits();
+  }, [selectedDepartment, departments, token]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -55,8 +116,8 @@ const AddEmployee: React.FC = () => {
     e.preventDefault();
 
     // Find department and unit IDs
-    const departmentObj = mockDepartments.find(d => d.name === formData.department);
-    const unitObj = departmentObj?.units.find(u => u.name === formData.unit);
+    const departmentObj = departments.find(d => d.name === formData.department);
+    const unitObj = units.find(u => u.name === formData.unit);
 
     // Prepare payload for backend
     const payload = {
@@ -81,7 +142,6 @@ const AddEmployee: React.FC = () => {
       accountNo: formData.accountNo,
       bio: formData.bio,
       fingerprintId: formData.fingerprint,
-      // Add other fields as needed
     };
 
     try {
@@ -271,14 +331,14 @@ const AddEmployee: React.FC = () => {
                   onValueChange={(value) => {
                     handleInputChange('department', value);
                     setSelectedDepartment(value);
-                    handleInputChange('unit', ''); // Reset unit when department changes
+                    handleInputChange('unit', '');
                   }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockDepartments.map(dept => (
+                    {departments.map(dept => (
                       <SelectItem key={dept.id} value={dept.name}>{dept.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -290,13 +350,13 @@ const AddEmployee: React.FC = () => {
                 <Select 
                   value={formData.unit} 
                   onValueChange={(value) => handleInputChange('unit', value)}
-                  disabled={!selectedDepartment}
+                  disabled={!selectedDepartment || units.length === 0}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select unit" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableUnits.map(unit => (
+                    {units.map(unit => (
                       <SelectItem key={unit.id} value={unit.name}>{unit.name}</SelectItem>
                     ))}
                   </SelectContent>

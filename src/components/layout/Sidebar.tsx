@@ -73,10 +73,10 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole, isCollapsed }) => {
     )}>
       <div className="p-4 border-b border-slate-700">
         <div className="flex items-center space-x-3">
-          <Shield className="h-8 w-8 text-blue-400" />
+         <img src='/presby.png' alt="Logo" className={cn("h-8 w-8", isCollapsed ? "hidden" : "block")} />
           {!isCollapsed && (
             <div>
-              <h1 className="text-xl font-bold">Hospital AMS</h1>
+              <h1 className="text-xs font-bold">PRESBYTERIAN HOSPITAL</h1>
               <p className="text-xs text-slate-400">Attendance Management</p>
             </div>
           )}

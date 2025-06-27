@@ -40,7 +40,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
+      console.log('Attempting to login with:', { username, password });
       const res = await axios.post('http://localhost:3000/api/auth/login', { username, password });
+      console.log('Login response:', res.data);
+      
       const { token, user } = res.data;
       setToken(token);
       setUser(user);

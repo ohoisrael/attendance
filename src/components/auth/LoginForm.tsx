@@ -28,9 +28,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isLoading, error }) => {
       <Card className="w-full max-w-md mx-4">
         <CardHeader className="text-center space-y-2">
           <div className="flex justify-center">
-            <Shield className="h-12 w-12 text-blue-600" />
+           <img src="/presby.png" alt="Logo" className="h-16 w-16 mb-2" />
           </div>
-          <CardTitle className="text-2xl font-bold">Hospital AMS</CardTitle>
+          <CardTitle className="text-2xl font-bold">PRESBYTERIAN HOSPITAL КОМ - ABURI
+</CardTitle>
           <CardDescription>
             Attendance Management System
             <br />
