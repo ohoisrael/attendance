@@ -10,8 +10,9 @@ const departmentRoutes = require('./routes/departmentRoutes');
 const unitRoutes = require('./routes/unitRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const errorHandler = require('./middleware/errorHandler');
-const attendanceSyncService = require('./services/attendanceSyncService');
-const attendanceSync = new attendanceSyncService();
+const attendanceSync = require('./services/attendanceSyncService');
+
+// const attendanceSync = new attendanceSyncService();
 
 const app = express();
 

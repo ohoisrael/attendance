@@ -1,30 +1,36 @@
-const ZKLib = require('zklib');
+const Zkteco = require('zkteco-js');
 
 const deviceConfig = {
-  ip: '192.168.1.100', // Replace with your WL30 IP
+  ip: '192.168.154.201',
   port: 4370,
-  password: '12345'     // Default admin password
+  timeout: 5000,
+  inport: 5200
 };
 
 async function fetchLogs() {
-  let client;
+  const device = new Zkteco(deviceConfig.ip, deviceConfig.port, deviceConfig.timeout, deviceConfig.inport);
+
   try {
-    client = await ZKLib.connect(deviceConfig.ip, deviceConfig.port);
-    await client.getTime(); // Test connection
-    await client.setPassword(deviceConfig.password);
-    const logs = await client.getAttendances();
-    
-    return logs.map(log => ({
-      userId: log.uid,
-      timestamp: new Date(log.timestamp),
-      status: log.status === 0 ? 'Check-in' : 'Check-out',
+    // Connect to the device
+    await device.createSocket();
+    console.log('Connected to WL30');
+
+    // Skip getInfo and directly fetch attendance logs
+    const logs = await device.getAttendances();
+    console.log('Raw Logs:', logs);
+
+    // Map logs to the required format
+    return logs.data.map(log => ({
+      userId: log.uid || log.userId || log.id, // Adjust based on actual response
+      timestamp: new Date(log.time || log.timestamp),
+      status: log.state === 0 ? 'Check-in' : 'Check-out',
       deviceIp: deviceConfig.ip
     }));
   } catch (error) {
-    console.error('ZKTeco fetch error:', error.message);
-    return []; // Return empty array on error
+    console.error('Error fetching logs:', error);
+    throw new Error(`Device communication failed: ${error.message}`);
   } finally {
-    if (client) await client.disconnect();
+    await device.disconnect();
   }
 }
 
