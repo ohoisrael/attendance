@@ -61,9 +61,9 @@ class AttendanceSyncService {
     
     console.log('Starting attendance sync service...');
     this.syncAttendance(); // Run immediately
-    this.interval = setInterval(() => {
-      this.syncAttendance();
-    }, 5000); // Every 5 seconds
+    // this.interval = setInterval(() => {
+    //   this.syncAttendance();
+    // }, 5000); // Every 5 seconds
   }
 
   stop() {

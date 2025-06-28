@@ -11,7 +11,7 @@ const unitRoutes = require('./routes/unitRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const zktecoRoutes = require('./routes/zktecoRoutes');
 const errorHandler = require('./middleware/errorHandler');
-const attendanceSync = require('./services/attendanceSyncService');
+// const attendanceSync = require('./services/attendanceSyncService');
 const realtimeAttendanceService = require('./services/realtimeAttendanceService');
 
 // const attendanceSync = new attendanceSyncService();
@@ -51,12 +51,12 @@ app.get('/health', (req, res) => {
 app.use(errorHandler);
 
 // Start attendance sync service
-attendanceSync.start();
+// attendanceSync.start();
 
 // shutdown attendance sync service
-process.on('SIGINT', () => {
-  attendanceSync.stop();
-  process.exit(0);
-});
+// process.on('SIGINT', () => {
+//   attendanceSync.stop();
+//   process.exit(0);
+// });
 
 module.exports = app;

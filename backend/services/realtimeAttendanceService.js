@@ -1,13 +1,14 @@
-const { getRealtimeLogs } = require('../utils/zktecoService');
+const { getRealtimeLogsFromDevice } = require('../utils/zktecoService');
 const Attendance = require('../models/Attendance');
 const Employee = require('../models/Employee');
 
 class RealtimeAttendanceService {
   async start() {
     console.log('Starting real-time attendance listener...');
-    await getRealtimeLogs(async (log) => {
+    await getRealtimeLogsFromDevice(async (log) => {
       try {
         // Find the employee by userId from the log
+        console.log('Received real-time log:', log);
         const employee = await Employee.findByUserId(log.userId);
         if (!employee) {
           console.warn(`No employee found for userId: ${log.userId}`);
